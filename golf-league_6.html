@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The League ⛳</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #2d6a4f;
+    --green-light: #40916c;
+    --green-pale: #d8f3dc;
+    --fairway: #1b4332;
+    --sky: #f0f4f8;
+    --text: #1a1a2e;
+    --muted: #6b7280;
+    --white: #ffffff;
+    --border: #e5e7eb;
+    --danger: #ef4444;
+    --gold: #f59e0b;
+    --sand: #e9c46a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--sky); color: var(--text); min-height: 100vh; }
+
+  header { background: var(--fairway); padding: 20px 24px 16px; position: relative; overflow: hidden; }
+  header::before { content: ''; position: absolute; bottom: -30px; left: -20px; width: 200px; height: 200px; background: var(--green); border-radius: 50%; opacity: 0.3; }
+  header::after { content: '⛳'; position: absolute; right: 20px; top: 10px; font-size: 52px; opacity: 0.2; }
+  header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 42px; color: var(--white); letter-spacing: 2px; line-height: 1; }
+  header p { color: #a7c4b5; font-size: 13px; margin-top: 4px; }
+  .sync-status { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; margin-top: 6px; color: #a7c4b5; }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #a7c4b5; flex-shrink: 0; }
+  .sync-dot.synced { background: #52b788; }
+  .sync-dot.syncing { background: var(--sand); animation: pulse 1s infinite; }
+  .sync-dot.error { background: var(--danger); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .tabs { display: flex; background: var(--white); border-bottom: 2px solid var(--border); padding: 0 16px; gap: 4px; overflow-x: auto; }
+  .tab { padding: 12px 16px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s; white-space: nowrap; }
+  .tab.active { color: var(--green); border-bottom-color: var(--green); }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  main { padding: 20px 16px; max-width: 600px; margin: 0 auto; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .season-meta { display: flex; gap: 12px; margin-bottom: 20px; }
+  .meta-card { flex: 1; background: var(--white); border-radius: 12px; padding: 14px; text-align: center; border: 1px solid var(--border); }
+  .meta-card .num { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--green); line-height: 1; }
+  .meta-card .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 1px; }
+
+  .leaderboard-list { display: flex; flex-direction: column; gap: 8px; }
+  .player-row { background: var(--white); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 14px; border: 1px solid var(--border); transition: transform 0.15s; }
+  .player-row:hover { transform: translateX(2px); }
+  .rank { font-family: 'Bebas Neue', sans-serif; font-size: 26px; width: 32px; text-align: center; color: var(--muted); flex-shrink: 0; }
+  .rank.gold { color: var(--gold); }
+  .rank.silver { color: #9ca3af; }
+  .rank.bronze { color: #b45309; }
+  .player-info { flex: 1; }
+  .player-name { font-weight: 600; font-size: 16px; }
+  .player-stats { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .player-avg { text-align: right; }
+  .avg-num { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--text); line-height: 1; }
+  .avg-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .trend { font-size: 18px; width: 24px; text-align: center; }
+
+  .no-data { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .no-data .icon { font-size: 48px; margin-bottom: 12px; }
+  .no-data p { font-size: 14px; }
+
+  .card { background: var(--white); border-radius: 16px; padding: 20px; border: 1px solid var(--border); margin-bottom: 16px; }
+  .card h2 { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1px; margin-bottom: 16px; color: var(--fairway); }
+
+  .field-group { margin-bottom: 16px; }
+  .field-group label { display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 6px; }
+  .field-group input, .field-group select { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 15px; color: var(--text); background: var(--white); transition: border-color 0.2s; outline: none; -webkit-appearance: none; }
+  .field-group input:focus, .field-group select:focus { border-color: var(--green-light); }
+
+  .score-inputs { display: flex; flex-direction: column; gap: 10px; }
+  .score-row { display: flex; align-items: center; gap: 12px; }
+  .score-row .player-label { width: 70px; font-weight: 600; font-size: 14px; flex-shrink: 0; }
+  .score-row input { flex: 1; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--text); text-align: center; outline: none; transition: border-color 0.2s; -webkit-appearance: none; }
+  .score-row input:focus { border-color: var(--green-light); }
+  .score-row .vs-par { width: 50px; text-align: center; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+  .under { color: var(--green); }
+  .over { color: var(--danger); }
+  .even { color: var(--muted); }
+
+  .btn { width: 100%; padding: 14px; background: var(--green); color: var(--white); border: none; border-radius: 12px; font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; cursor: pointer; transition: background 0.2s, transform 0.1s; }
+  .btn:hover { background: var(--green-light); }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn-secondary { background: transparent; color: var(--green); border: 1.5px solid var(--green); font-size: 14px; font-family: 'DM Sans', sans-serif; font-weight: 600; padding: 10px; border-radius: 10px; width: 100%; cursor: pointer; margin-bottom: 16px; display: block; text-align: center; }
+  .btn-danger { background: transparent; color: var(--danger); border: 1.5px solid var(--danger); font-size: 13px; font-family: 'DM Sans', sans-serif; font-weight: 600; padding: 8px; border-radius: 8px; width: auto; cursor: pointer; }
+
+  .round-card { background: var(--white); border-radius: 12px; border: 1px solid var(--border); padding: 16px; margin-bottom: 10px; }
+  .round-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .round-date { font-weight: 600; font-size: 15px; }
+  .round-week { font-size: 12px; color: var(--muted); }
+  .round-scores { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .round-score-item { text-align: center; background: var(--sky); border-radius: 8px; padding: 8px 6px; }
+  .round-score-item .name { font-size: 11px; color: var(--muted); }
+  .round-score-item .score-val { font-family: 'Bebas Neue', sans-serif; font-size: 24px; line-height: 1; }
+  .round-score-item.winner { background: var(--green-pale); }
+  .round-score-item.winner .score-val { color: var(--green); }
+
+  .chart-container { background: var(--white); border-radius: 16px; border: 1px solid var(--border); padding: 20px; margin-bottom: 16px; }
+  .chart-title { font-family: 'Bebas Neue', sans-serif; font-size: 20px; margin-bottom: 16px; color: var(--fairway); }
+  .chart-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--fairway); color: white; padding: 12px 24px; border-radius: 100px; font-size: 14px; font-weight: 600; transition: transform 0.3s; z-index: 1000; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .par-badge { display: inline-block; background: var(--green-pale); color: var(--green); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 100px; margin-left: 8px; }
+  .loading { text-align: center; padding: 40px 20px; color: var(--muted); }
+  .spinner { font-size: 32px; animation: spin 1s linear infinite; display: inline-block; }
+  @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>The League</h1>
+  <p>9 Holes · Par 33 · Season Tracker</p>
+  <div class="sync-status">
+    <div class="sync-dot syncing" id="sync-dot"></div>
+    <span id="sync-label">Connecting to Google Sheets...</span>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('leaderboard', this)">🏆 Leaderboard</div>
+  <div class="tab" onclick="showTab('add', this)">➕ Add Round</div>
+  <div class="tab" onclick="showTab('history', this)">📋 History</div>
+  <div class="tab" onclick="showTab('trends', this)">📈 Trends</div>
+</div>
+
+<main>
+  <!-- LEADERBOARD -->
+  <div class="section active" id="sec-leaderboard">
+    <div class="season-meta">
+      <div class="meta-card"><div class="num" id="meta-rounds">—</div><div class="lbl">Rounds</div></div>
+      <div class="meta-card"><div class="num" id="meta-low">—</div><div class="lbl">Low Score</div></div>
+      <div class="meta-card"><div class="num" id="meta-leader">—</div><div class="lbl">Leader</div></div>
+    </div>
+    <div class="leaderboard-list" id="leaderboard-list">
+      <div class="loading"><div class="spinner">⛳</div><p style="margin-top:12px;font-size:14px;">Loading scores...</p></div>
+    </div>
+  </div>
+
+  <!-- ADD ROUND -->
+  <div class="section" id="sec-add">
+    <div class="card">
+      <h2>New Round</h2>
+      <div class="field-group">
+        <label>Date</label>
+        <input type="date" id="round-date">
+      </div>
+      <div class="field-group">
+        <label>Scores <span class="par-badge">Par 33</span></label>
+        <div class="score-inputs" id="score-inputs"></div>
+      </div>
+    </div>
+    <button class="btn" id="save-btn" onclick="saveRound()">SAVE ROUND</button>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="section" id="sec-history">
+    <button class="btn-secondary" onclick="exportCSV()">⬇️ Export to CSV</button>
+    <div id="history-list"></div>
+  </div>
+
+  <!-- TRENDS -->
+  <div class="section" id="sec-trends">
+    <div class="card">
+      <h2>Player Trend</h2>
+      <div class="field-group">
+        <label>Select Player</label>
+        <select id="trend-player" onchange="renderTrends()">
+          <option value="all">All Players</option>
+          <option>Mark</option>
+          <option>Jon</option>
+          <option>Gus</option>
+          <option>Tom</option>
+          <option>Kenny</option>
+        </select>
+      </div>
+    </div>
+    <div id="trend-content"></div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbyb8Fm7_C9Iom3OmxNOPO2e18S19Bq4iKZ7FubQx7mj3VaTFU_hxqt6gWdIMSSl6XnL/exec';
+const PLAYERS = ['Mark', 'Jon', 'Gus', 'Tom', 'Kenny'];
+const PAR = 33;
+const CACHE_KEY = 'golf_league_cache';
+const CACHE_COUNT_KEY = 'golf_league_cache_count';
+let rounds = [];
+
+function setSyncStatus(state, msg) {
+  document.getElementById('sync-dot').className = 'sync-dot ' + state;
+  document.getElementById('sync-label').textContent = msg;
+}
+
+function loadCache() {
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) return JSON.parse(cached);
+  } catch(e) {}
+  return null;
+}
+
+function saveCache(data) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+    localStorage.setItem(CACHE_COUNT_KEY, data.length);
+  } catch(e) {}
+}
+
+async function loadFromSheets() {
+  // Show cached data instantly if available
+  const cached = loadCache();
+  if (cached && cached.length > 0) {
+    rounds = cached;
+    renderLeaderboard();
+    setSyncStatus('syncing', 'Updating in background...');
+  } else {
+    setSyncStatus('syncing', 'Loading from Google Sheets...');
+  }
+
+  // Fetch fresh data in background, only re-render if something changed
+  try {
+    const res = await fetch(SHEET_URL + '?t=' + Date.now());
+    const raw = await res.json();
+    const fresh = parseSheetData(raw);
+    if (JSON.stringify(fresh) !== JSON.stringify(rounds)) {
+      rounds = fresh;
+      saveCache(rounds);
+      renderLeaderboard();
+    } else {
+      saveCache(rounds);
+    }
+    setSyncStatus('synced', 'Synced with Google Sheets ✓');
+  } catch (e) {
+    if (cached && cached.length > 0) {
+      setSyncStatus('error', 'Offline — showing cached data');
+    } else {
+      setSyncStatus('error', 'Could not connect — check your connection');
+      document.getElementById('leaderboard-list').innerHTML = `<div class="no-data"><div class="icon">⚠️</div><p>Could not load data.<br>Check your internet connection and try refreshing.</p></div>`;
+    }
+  }
+}
+
+function parseSheetData(raw) {
+  if (!raw || raw.length < 2) return [];
+  const headers = raw[0];
+  return raw.slice(1).map(row => {
+    const scores = {};
+    headers.slice(1).forEach((p, i) => {
+      const val = parseInt(row[i + 1]);
+      if (!isNaN(val) && val > 0) scores[p] = val;
+    });
+    return { date: String(row[0]), scores };
+  }).filter(r => r.date && Object.keys(r.scores).length > 0);
+}
+
+function buildSheetData() {
+  const headers = ['date', ...PLAYERS];
+  const rows = rounds.map(r => [r.date, ...PLAYERS.map(p => r.scores[p] || '')]);
+  return [headers, ...rows];
+}
+
+async function saveToSheets() {
+  setSyncStatus('syncing', 'Saving to Google Sheets...');
+  try {
+    await fetch(SHEET_URL, {
+      method: 'POST',
+      body: JSON.stringify(buildSheetData()),
+      headers: { 'Content-Type': 'text/plain' }
+    });
+    setSyncStatus('synced', 'Synced with Google Sheets ✓');
+    return true;
+  } catch (e) {
+    setSyncStatus('error', 'Save failed — check connection');
+    showToast('⚠️ Could not save to Sheets');
+    return false;
+  }
+}
+
+function showTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('sec-' + tab).classList.add('active');
+  if (tab === 'leaderboard') renderLeaderboard();
+  if (tab === 'history') renderHistory();
+  if (tab === 'trends') renderTrends();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function setupAddRound() {
+  document.getElementById('round-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('score-inputs').innerHTML = PLAYERS.map(p => `
+    <div class="score-row">
+      <span class="player-label">${p}</span>
+      <input type="number" id="score-${p}" min="27" max="70" placeholder="—" oninput="updateVsPar('${p}')" inputmode="numeric">
+      <span class="vs-par" id="vspar-${p}"></span>
+    </div>`).join('');
+}
+
+function updateVsPar(player) {
+  const val = parseInt(document.getElementById('score-' + player).value);
+  const el = document.getElementById('vspar-' + player);
+  if (isNaN(val)) { el.textContent = ''; return; }
+  const diff = val - PAR;
+  el.textContent = diff === 0 ? 'E' : (diff > 0 ? '+' + diff : diff);
+  el.className = 'vs-par ' + (diff === 0 ? 'even' : diff > 0 ? 'over' : 'under');
+}
+
+async function saveRound() {
+  const date = document.getElementById('round-date').value;
+  if (!date) { showToast('Please pick a date'); return; }
+  const scores = {};
+  let anyScore = false;
+  for (const p of PLAYERS) {
+    const val = parseInt(document.getElementById('score-' + p).value);
+    if (!isNaN(val) && val > 0) { scores[p] = val; anyScore = true; }
+  }
+  if (!anyScore) { showToast('Enter at least one score'); return; }
+
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.textContent = 'SAVING...';
+
+  rounds.push({ date, scores });
+  rounds.sort((a, b) => a.date.localeCompare(b.date));
+  const ok = await saveToSheets();
+
+  btn.disabled = false;
+  btn.textContent = 'SAVE ROUND';
+  if (ok) {
+    setupAddRound();
+    showToast('Round saved! ⛳');
+    renderLeaderboard();
+  }
+}
+
+function renderLeaderboard() {
+  document.getElementById('meta-rounds').textContent = rounds.length;
+  if (rounds.length === 0) {
+    document.getElementById('leaderboard-list').innerHTML = `<div class="no-data"><div class="icon">⛳</div><p>No rounds yet.<br>Add your first round to get started!</p></div>`;
+    document.getElementById('meta-low').textContent = '—';
+    document.getElementById('meta-leader').textContent = '—';
+    return;
+  }
+  const stats = PLAYERS.map(p => {
+    const pr = rounds.filter(r => r.scores[p] !== undefined);
+    if (!pr.length) return null;
+    const sc = pr.map(r => r.scores[p]);
+    return { name: p, rounds: pr.length, avg: sc.reduce((a,b)=>a+b,0)/sc.length, best: Math.min(...sc), scores: sc };
+  }).filter(Boolean).sort((a, b) => a.avg - b.avg);
+
+  let low = Infinity;
+  rounds.forEach(r => Object.values(r.scores).forEach(s => { if (s < low) low = s; }));
+  document.getElementById('meta-low').textContent = low === Infinity ? '—' : low;
+  document.getElementById('meta-leader').textContent = stats[0]?.name || '—';
+
+  document.getElementById('leaderboard-list').innerHTML = stats.map((s, i) => {
+    const diff = s.avg - PAR;
+    const diffStr = diff === 0 ? 'E' : (diff > 0 ? '+' + diff.toFixed(1) : diff.toFixed(1));
+    const trend = getTrend(s.scores);
+    const rc = ['gold','silver','bronze'][i] || '';
+    return `<div class="player-row">
+      <div class="rank ${rc}">${i+1}</div>
+      <div class="player-info">
+        <div class="player-name">${s.name}</div>
+        <div class="player-stats">${s.rounds} round${s.rounds!==1?'s':''} · Best: ${s.best} · vs par: ${diffStr}</div>
+      </div>
+      <div class="trend">${trend}</div>
+      <div class="player-avg"><div class="avg-num">${s.avg.toFixed(1)}</div><div class="avg-lbl">Avg</div></div>
+    </div>`;
+  }).join('');
+}
+
+function getTrend(scores) {
+  if (scores.length < 3) return '—';
+  const recent = scores.slice(-3), older = scores.slice(-6, -3);
+  if (!older.length) return '—';
+  const ra = recent.reduce((a,b)=>a+b,0)/recent.length;
+  const oa = older.reduce((a,b)=>a+b,0)/older.length;
+  return ra < oa - 0.5 ? '📈' : ra > oa + 0.5 ? '📉' : '➡️';
+}
+
+function renderHistory() {
+  if (!rounds.length) {
+    document.getElementById('history-list').innerHTML = `<div class="no-data"><div class="icon">📋</div><p>No rounds recorded yet.</p></div>`;
+    return;
+  }
+  document.getElementById('history-list').innerHTML = [...rounds].reverse().map((r, idx) => {
+    const realIdx = rounds.length - 1 - idx;
+    const entries = Object.entries(r.scores).sort((a,b) => a[1]-b[1]);
+    const winScore = entries[0]?.[1];
+    return `<div class="round-card">
+      <div class="round-header">
+        <div><div class="round-date">${formatDate(r.date)}</div><div class="round-week">Round ${realIdx+1}</div></div>
+        <button class="btn-danger" onclick="deleteRound(${realIdx})">Delete</button>
+      </div>
+      <div class="round-scores">
+        ${entries.map(([p,s]) => `<div class="round-score-item ${s===winScore?'winner':''}">
+          <div class="name">${p}</div>
+          <div class="score-val">${s}</div>
+          <div class="name">${s===winScore?'🏆':s>PAR?'+'+( s-PAR):s===PAR?'E':s-PAR}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function deleteRound(idx) {
+  if (!confirm('Delete this round?')) return;
+  rounds.splice(idx, 1);
+  await saveToSheets();
+  renderHistory();
+  showToast('Round deleted');
+}
+
+function renderTrends() {
+  const player = document.getElementById('trend-player').value;
+  const players = player === 'all' ? PLAYERS : [player];
+  const container = document.getElementById('trend-content');
+  if (rounds.length < 2) {
+    container.innerHTML = `<div class="no-data"><div class="icon">📈</div><p>Need at least 2 rounds to show trends.</p></div>`;
+    return;
+  }
+  container.innerHTML = players.map(p => {
+    const pr = rounds.filter(r => r.scores[p] !== undefined);
+    if (pr.length < 2) return '';
+    const scores = pr.map(r => r.scores[p]);
+    const labels = pr.map((r,i) => 'R'+(rounds.indexOf(r)+1));
+    return buildMiniChart(p, scores, labels);
+  }).join('');
+}
+
+function buildMiniChart(name, scores, labels) {
+  const min = Math.min(...scores)-2, max = Math.max(...scores)+2;
+  const w = 300, h = 100;
+  const pts = scores.map((s,i) => ({
+    x: (i/(scores.length-1))*(w-20)+10,
+    y: h-((s-min)/(max-min))*h, s
+  }));
+  const pathD = pts.map((p,i) => `${i===0?'M':'L'} ${p.x} ${p.y}`).join(' ');
+  const avg = scores.reduce((a,b)=>a+b,0)/scores.length;
+  const best = Math.min(...scores);
+  const latest = scores[scores.length-1];
+  const improving = scores.length >= 3 && latest < scores[0];
+  const uid = name.replace(/\s/g,'');
+  return `<div class="chart-container">
+    <div class="chart-title">${name} ${improving?'📈':''}</div>
+    <div style="display:flex;gap:16px;margin-bottom:12px;">
+      <div style="text-align:center;"><div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--green);">${best}</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Best</div></div>
+      <div style="text-align:center;"><div style="font-family:'Bebas Neue',sans-serif;font-size:26px;">${avg.toFixed(1)}</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Avg</div></div>
+      <div style="text-align:center;"><div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--green-light);">${latest}</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Latest</div></div>
+    </div>
+    <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:120px;overflow:visible;">
+      <defs><linearGradient id="g${uid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#2d6a4f" stop-opacity="0.2"/>
+        <stop offset="100%" stop-color="#2d6a4f" stop-opacity="0"/>
+      </linearGradient></defs>
+      <path d="${pathD} L ${pts[pts.length-1].x} ${h} L ${pts[0].x} ${h} Z" fill="url(#g${uid})"/>
+      <path d="${pathD}" fill="none" stroke="#2d6a4f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      ${pts.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="4" fill="#2d6a4f" stroke="white" stroke-width="2"/>
+        <text x="${p.x}" y="${p.y-10}" text-anchor="middle" font-size="10" fill="#1a1a2e" font-family="'Bebas Neue',sans-serif">${p.s}</text>`).join('')}
+    </svg>
+    <div class="chart-labels">${labels.map(l=>`<span>${l}</span>`).join('')}</div>
+  </div>`;
+}
+
+function exportCSV() {
+  if (!rounds.length) { showToast('No data to export'); return; }
+  const csv = [['Date',...PLAYERS],...rounds.map(r=>[r.date,...PLAYERS.map(p=>r.scores[p]||'')])].map(r=>r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'golf-league.csv';
+  a.click();
+  showToast('CSV exported! ⬇️');
+}
+
+function formatDate(d) {
+  return new Date(d + 'T12:00:00').toLocaleDateString('en-US', {weekday:'short',month:'short',day:'numeric',year:'numeric'});
+}
+
+setupAddRound();
+loadFromSheets();
+</script>
+</body>
+</html>
